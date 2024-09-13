@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -68,20 +69,68 @@ func main() {
 		response.Header().Add("Content-Type", "application/json; charset=utf-8")
 		response.Write(jsonList)
 
-		
 	})
+
+	mux.HandleFunc("POST /api/generate",func(response http.ResponseWriter, request *http.Request) {
+		// add a flusher
+		flusher, ok := response.(http.Flusher)
+		if !ok {
+			response.Write([]byte("😡 Error: expected http.ResponseWriter to be an http.Flusher"))
+		}
+		body := GetBytesBody(request)
+		// unmarshal the json data
+		var data map[string]string
+
+		err := json.Unmarshal(body, &data)
+		if err != nil {
+			response.Write([]byte("😡 Error: " + err.Error()))
+		}
+
+		fmt.Println(data)
+
+		question := data["question"]
+		model := data["model"]
+
+		query := llm.GenQuery{
+			Model:   model,
+			Prompt:  question,
+			Options: options,
+			//Context: conversationalContext,
+		}
+
+		_, err = completion.GenerateStream(ollamaUrl, query,
+			func(answer llm.GenAnswer) error {
+				log.Println("📝:", answer.Response)
+				response.Write([]byte(answer.Response))
+				flusher.Flush()
+				if !shouldIStopTheCompletion {
+					return nil
+				} else {
+					return errors.New("🚫 Cancelling request")
+				}
+			})
+
+		if err != nil {
+			shouldIStopTheCompletion = false
+			response.Write([]byte("bye: " + err.Error()))
+		}
+		// keep the las context
+		//conversationalContext = answer.Context
+
+	})
+
 
 	mux.HandleFunc("GET /model", func(response http.ResponseWriter, request *http.Request) {
 		response.Write([]byte("🤖 LLM: " + model))
 	})
 
 	// Cancel/Stop the generation of the completion
-	mux.HandleFunc("DELETE /cancel-request", func(response http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc("DELETE /api/completion/cancel", func(response http.ResponseWriter, request *http.Request) {
 		shouldIStopTheCompletion = true
 		response.Write([]byte("🚫 Cancelling request..."))
 	})
 
-	mux.HandleFunc("/prompt", func(response http.ResponseWriter, request *http.Request) {
+	mux.HandleFunc("POST /api/simple/prompt", func(response http.ResponseWriter, request *http.Request) {
 		// add a flusher
 		flusher, ok := response.(http.Flusher)
 		if !ok {

@@ -1,7 +1,7 @@
 <h6>Prompt Generate</h6>
 
 <fieldset>
-    <!-- Sisplay the current running model -->
+    <!-- Display the current running model -->
     <legend 
         hx-get="/model" 
         hx-trigger="load"
@@ -56,7 +56,7 @@
             const question = document.getElementById('question').value;
             console.log('Question:', question);
 
-            const response = await fetch("/prompt", {
+            const response = await fetch("/api/simple/prompt", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json;charset=utf-8",
@@ -92,7 +92,7 @@
                 aborter = new AbortController()
 
                 try {
-                    const response = await fetch("/cancel-request", {
+                    const response = await fetch("/api/completion/cancel", {
                         method: "DELETE",
                     })
                     console.log(response)

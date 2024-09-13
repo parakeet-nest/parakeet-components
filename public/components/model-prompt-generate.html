@@ -1,1 +1,143 @@
 <h6>Model Prompt Generate</h6>
+
+
+<fieldset>
+    <!-- Display the current running model -->
+    <legend>
+        Demo
+    </legend>
+
+    <!--
+    <legend 
+        hx-get="/model" 
+        hx-trigger="load"
+        hx-target="#model">
+        Demo with <span id="model"></span>
+    </legend>
+    -->
+    <div class="field border label">
+        <input id="model">
+        <label>model</label>
+    </div>
+
+    <div class="field border label">
+        <select>
+            <option>Item 1</option>
+            <option>Item 2</option>
+            <option>Item 3</option>
+        </select>
+        <label>Select</label>
+    </div>
+
+
+    <div id="prompt-form" class="field border label textarea">
+      <textarea id="question">
+      </textarea>
+      <label>Prompt</label>
+      <span class="helper">Type your question above ☝️</span>
+    </div>
+    <!-- ***** -->
+    
+    <!--Prompt Form -->
+    <div class="field border label">
+        <button class="small-round" hx-trigger="click[prompt()]">
+            <i>home</i>
+            <span>Send Prompt</span>
+        </button>
+
+        <button class="small-round" hx-trigger="click[stop()]">
+            <i>stop</i>
+            <span>Stop</span>
+        </button>
+
+        <button class="small-round" hx-trigger="click[clear()]">
+            <i>clear</i>
+            <span>Clear the answer</span>
+        </button>
+    </div>
+    <!-- ***** -->
+</fieldset>
+
+<!-- Generation completion result -->
+<div class="field border label">
+    <div id="txt-response"></div>
+</div>
+<!-- ***** -->
+
+<script>
+
+    document.getElementById('question').value = 'Generate an hello world program in Rustlang?'
+
+    let modelAborter = new AbortController
+
+    async function prompt() {
+        let responseText=""
+
+        try {
+            const question = document.getElementById('question').value;
+            const model = document.getElementById('model').value
+            console.log('Model:', model);
+            console.log('Question:', question);
+
+            const response = await fetch("/api/generate", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json;charset=utf-8",
+                },
+                body: JSON.stringify({
+                    question: question,
+                }),
+                signal: modelAborter.signal
+            })
+
+            const reader = response.body.getReader()
+
+            while (true) {
+                const { done, value } = await reader.read()
+                    
+                if (done) {
+                    responseText = responseText + "\n"
+                    changeResponseContent(markdownit().render(responseText))
+                    return
+                }
+                // Otherwise do something here to process current chunk
+                const decodedValue = new TextDecoder().decode(value)
+                console.log(decodedValue)
+                responseText = responseText + decodedValue
+                changeResponseContent(markdownit().render(responseText))
+
+            }
+
+        } catch(error) {
+            if (error.name === 'AbortError') {
+                console.log("✋", "Fetch request aborted")
+                //txtPrompt.value = ""
+                modelAborter = new AbortController()
+
+                try {
+                    const response = await fetch("/api/completion/cancel", {
+                        method: "DELETE",
+                    })
+                    console.log(response)
+                } catch(error) {
+                    console.log("😡", error)
+                }
+
+            } else {
+                console.log("😡", error)
+            }
+        }            
+    }
+
+    function stop() {
+        modelAborter.abort()
+    }
+    function clear() {
+        changeResponseContent("")
+    }
+
+    function changeResponseContent(message) {
+        const responseDiv = document.getElementById('txt-response');
+        responseDiv.innerHTML = message;
+    }
+</script>
