@@ -1,0 +1,33 @@
+<h6>Models List</h6>
+
+<div hx-ext="client-side-templates">
+    <table hx-get="/api/models" hx-swap="innerHTML" hx-target="#models-list" hx-trigger="load" mustache-array-template="models-list-tpl">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Size</th>
+                <th>Family</th>
+                <th>Parameter</th>
+                <th>Quantization</th>
+                <th>Modified</th>
+            </tr>
+        </thead>
+        <tbody id="models-list">
+
+        </tbody>
+    </table>
+
+    <template id="models-list-tpl">
+        {{#data}}
+        <tr>
+            <td><span>{{ name }}</span></td>
+            <td><span>{{ size }}</span></td>
+            <td><span>{{ details.family }}</span></td>
+            <td><span>{{ details.parameter_size }}</span></td>
+            <td><span>{{ details.quantization_level }}</span></td>
+            <td><span>{{ modified_at }}</span></td>
+        </tr>
+        {{/data}}
+    </template>
+
+</div>
