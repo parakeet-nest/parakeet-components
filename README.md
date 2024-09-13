@@ -1,4 +1,4 @@
-# Tiny GenAI Stack
+# Parakeet Components [GenAI Stack walking skeleton]
 
 This 🐳 Compose GenAI Stack is an example of the usage of the [Parakeet](https://github.com/parakeet-nest/parakeet) 🦜🪺 GoLang library, made to simplify the development of small generative AI applications.
 
